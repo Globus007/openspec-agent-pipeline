@@ -1,0 +1,54 @@
+# pipeline-steps.yaml — order, agents, models, flags
+# Customize per project
+
+defaults:
+  model: grok-4.5   # or whatever your platform supports
+
+steps:
+  - id: propose
+    subagent_type: spec-author
+    task_tags: []
+    requires_approval_after: true
+    optional: false
+
+  - id: spec_review
+    subagent_type: spec-reviewer
+    optional: true          # can be skipped
+    requires_approval_after: false
+
+  - id: foundation
+    subagent_type: foundation-agent
+    task_tags: ["foundation"]
+    exit_checks: ["npm run build"]
+
+  - id: test
+    subagent_type: test-engineer
+    task_tags: ["test"]
+    expect_test_failure: true
+    exit_checks: ["npm test"]
+
+  - id: implement_backend
+    subagent_type: backend-implementer
+    task_tags: ["backend"]
+    exit_checks: ["npm run build", "npm test"]
+
+  - id: implement_frontend
+    subagent_type: frontend-implementer
+    task_tags: ["frontend"]
+    exit_checks: ["npm run build", "npm run lint"]
+
+  - id: qa_verify
+    subagent_type: qa-verifier
+    task_tags: ["verify"]
+    exit_checks: ["npm run build", "npm run lint", "npm test"]
+
+  - id: review
+    subagent_type: reviewer
+    # conditional fix loop handled by orchestrator
+
+  - id: fix
+    subagent_type: fixer
+    conditional: true       # only when last_verdict == CHANGES_REQUIRED
+
+  - id: archive
+    subagent_type: archiver
